@@ -47,8 +47,7 @@ uint32_t list_get_serialize_size(list_t *list)
 	// 头部大小（不包含nodes[]）+ 节点数组大小
 	// sizeof(list_persist_header_t) 不包含灵活数组成员 nodes[]
 	size_t node_persist_size = list_persist_node_size(list->element_size);
-	return sizeof(list_persist_header_t) +
-	       list->size * node_persist_size;
+	return sizeof(list_persist_header_t) + list->size * node_persist_size;
 }
 
 uint32_t list_serialize(list_t *list, void *buffer, uint32_t buffer_size)

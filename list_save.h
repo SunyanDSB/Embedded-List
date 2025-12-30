@@ -40,7 +40,8 @@ typedef struct
 	uint16_t capacity;      // 容量
 	uint16_t element_size;  // 元素大小
 	                        // 后面跟着 list_persist_node_t 数组（size个元素，每个包含index和data）
-	list_persist_node_t nodes[];
+	                        // 使用uint8_t[]避免嵌套灵活数组成员的问题（某些编译器不支持）
+	uint8_t data[];         // 节点数据区域，通过指针算术访问，不使用list_persist_node_t nodes[]以兼容编译器
 } list_persist_header_t;
 
 /**
