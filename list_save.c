@@ -9,7 +9,7 @@
 // 节点大小：结构体大小 + 数据大小，然后对齐到4字节（ARM指针对齐要求）
 #define LIST_NODE_SIZE(element_size) ALIGN_UP(sizeof(list_node_t) + ((element_size) > 0 ? (element_size) : 1), 4)
 
-static uint16_t list_node_to_index(list_t *list, list_node_t *node)
+static uint16_t list_node_to_index(list_handle_t list, list_node_t *node)
 {
 	if (node == NULL || list == NULL || list->node_pool == NULL)
 		return 0xFFFF;  // 无效索引
@@ -27,7 +27,7 @@ static uint16_t list_node_to_index(list_t *list, list_node_t *node)
 	return index;
 }
 
-static list_node_t *list_index_to_node(list_t *list, uint16_t index)
+static list_node_t *list_index_to_node(list_handle_t list, uint16_t index)
 {
 	if (list == NULL || list->node_pool == NULL || index >= list->capacity)
 		return NULL;
@@ -41,7 +41,7 @@ static inline size_t list_persist_node_size(uint16_t element_size)
 	return sizeof(uint16_t) + element_size;  // index + data
 }
 
-uint32_t list_get_serialize_size(list_t *list)
+uint32_t list_get_serialize_size(list_handle_t list)
 {
 	if (list == NULL)
 		return 0;
@@ -52,7 +52,7 @@ uint32_t list_get_serialize_size(list_t *list)
 	return sizeof(list_persist_header_t) + list->size * node_persist_size;
 }
 
-uint32_t list_serialize(list_t *list, void *buffer, uint32_t buffer_size)
+uint32_t list_serialize(list_handle_t list, void *buffer, uint32_t buffer_size)
 {
 	if (list == NULL || buffer == NULL)
 		return 0;
@@ -103,7 +103,7 @@ uint32_t list_serialize(list_t *list, void *buffer, uint32_t buffer_size)
 	return required_size;
 }
 // 反序列化：从缓冲区恢复链表
-bool list_deserialize(list_t *list, const void *buffer, uint32_t buffer_size)
+bool list_deserialize(list_handle_t list, const void *buffer, uint32_t buffer_size)
 {
 	if (list == NULL || buffer == NULL)
 		return false;

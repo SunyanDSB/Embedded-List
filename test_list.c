@@ -111,7 +111,7 @@ test_result_t test_list_creation(void)
 	test_result_t result = {"列表创建和销毁", true, ""};
 
 	// 测试动态创建
-	list_t *list = list_create(10, sizeof(int));
+	list_handle_t list = list_create(10, sizeof(int));
 	if (list == NULL)
 	{
 		result.passed = false;
@@ -169,7 +169,7 @@ test_result_t test_list_static_creation(void)
 
 	printf("Test_data_t size: %zu bytes, node_size: %zu bytes\n", sizeof(Test_data_t), node_size);
 	printf("capacity: %d, total pool size: %zu bytes\n", capacity, capacity * node_size);
-	list_t *list = list_create_from_buf(node_pool, capacity, sizeof(Test_data_t));
+	list_handle_t list = list_create_from_buf(node_pool, capacity, sizeof(Test_data_t));
 	if (list == NULL)
 	{
 		result.passed = false;
@@ -222,7 +222,7 @@ test_result_t test_list_basic_operations(void)
 {
 	test_result_t result = {"基本操作测试", true, ""};
 
-	list_t *list = list_create(5, sizeof(int));
+	list_handle_t list = list_create(5, sizeof(int));
 	if (list == NULL)
 	{
 		result.passed = false;
@@ -256,7 +256,7 @@ test_result_t test_list_push_pop(void)
 {
 	test_result_t result = {"压入弹出操作", true, ""};
 
-	list_t *list = list_create(5, sizeof(int));
+	list_handle_t list = list_create(5, sizeof(int));
 	if (list == NULL)
 	{
 		result.passed = false;
@@ -324,7 +324,7 @@ test_result_t test_list_insert_erase(void)
 {
 	test_result_t result = {"插入删除操作", true, ""};
 
-	list_t *list = list_create(10, sizeof(int));
+	list_handle_t list = list_create(10, sizeof(int));
 	if (list == NULL)
 	{
 		result.passed = false;
@@ -395,7 +395,7 @@ test_result_t test_list_front_back(void)
 {
 	test_result_t result = {"前后元素访问", true, ""};
 
-	list_t *list = list_create(5, sizeof(int));
+	list_handle_t list = list_create(5, sizeof(int));
 	if (list == NULL)
 	{
 		result.passed = false;
@@ -445,7 +445,7 @@ test_result_t test_list_clear(void)
 {
 	test_result_t result = {"清空操作", true, ""};
 
-	list_t *list = list_create(5, sizeof(int));
+	list_handle_t list = list_create(5, sizeof(int));
 	if (list == NULL)
 	{
 		result.passed = false;
@@ -489,7 +489,7 @@ test_result_t test_list_replace(void)
 {
 	test_result_t result = {"替换操作", true, ""};
 
-	list_t *list = list_create(5, sizeof(int));
+	list_handle_t list = list_create(5, sizeof(int));
 	if (list == NULL)
 	{
 		result.passed = false;
@@ -545,8 +545,8 @@ test_result_t test_list_swap(void)
 {
 	test_result_t result = {"交换操作", true, ""};
 
-	list_t *list1 = list_create(5, sizeof(int));
-	list_t *list2 = list_create(3, sizeof(int));
+	list_handle_t list1 = list_create(5, sizeof(int));
+	list_handle_t list2 = list_create(3, sizeof(int));
 
 	if (list1 == NULL || list2 == NULL)
 	{
@@ -608,7 +608,7 @@ test_result_t test_list_remove(void)
 {
 	test_result_t result = {"移除操作", true, ""};
 
-	list_t *list = list_create(10, sizeof(int));
+	list_handle_t list = list_create(10, sizeof(int));
 	if (list == NULL)
 	{
 		result.passed = false;
@@ -661,7 +661,7 @@ test_result_t test_list_reverse(void)
 {
 	test_result_t result = {"反转操作", true, ""};
 
-	list_t *list = list_create(5, sizeof(int));
+	list_handle_t list = list_create(5, sizeof(int));
 	if (list == NULL)
 	{
 		result.passed = false;
@@ -701,7 +701,7 @@ test_result_t test_list_unique(void)
 {
 	test_result_t result = {"去重操作", true, ""};
 
-	list_t *list = list_create(11, sizeof(int));
+	list_handle_t list = list_create(11, sizeof(int));
 	if (list == NULL)
 	{
 		result.passed = false;
@@ -762,7 +762,7 @@ test_result_t test_list_find_if_next(void)
 {
 	test_result_t result = {"查找匹配节点（支持从指定位置开始）", true, ""};
 
-	list_t *list = list_create(20, sizeof(int));
+	list_handle_t list = list_create(20, sizeof(int));
 	if (list == NULL)
 	{
 		result.passed = false;
@@ -920,7 +920,7 @@ test_result_t test_list_for_each_if(void)
 {
 	test_result_t result = {"遍历所有节点并执行回调", true, ""};
 
-	list_t *list = list_create(20, sizeof(int));
+	list_handle_t list = list_create(20, sizeof(int));
 	if (list == NULL)
 	{
 		result.passed = false;
@@ -986,7 +986,7 @@ test_result_t test_list_for_each_if(void)
 	}
 
 	// 测试4: 测试空列表
-	list_t *empty_list = list_create(10, sizeof(int));
+	list_handle_t empty_list = list_create(10, sizeof(int));
 	if (empty_list == NULL)
 	{
 		result.passed = false;
@@ -1050,7 +1050,7 @@ test_result_t test_list_recursive_lock(void)
 {
 	test_result_t result = {"递归锁死锁测试", true, ""};
 
-	list_t *list = list_create(20, sizeof(int));
+	list_handle_t list = list_create(20, sizeof(int));
 	if (list == NULL)
 	{
 		result.passed = false;
@@ -1129,7 +1129,7 @@ test_result_t test_list_edge_cases(void)
 	test_result_t result = {"边界情况测试", true, ""};
 
 	// 测试容量为0的列表
-	list_t *list = list_create(0, sizeof(int));
+	list_handle_t list = list_create(0, sizeof(int));
 	if (list != NULL)
 	{
 		result.passed = false;
@@ -1165,8 +1165,8 @@ test_result_t test_list_splice(void)
 {
 	test_result_t result = {"拼接操作", true, ""};
 
-	list_t *list1 = list_create(10, sizeof(int));
-	list_t *list2 = list_create(10, sizeof(int));
+	list_handle_t list1 = list_create(10, sizeof(int));
+	list_handle_t list2 = list_create(10, sizeof(int));
 
 	if (list1 == NULL || list2 == NULL)
 	{
@@ -1291,8 +1291,8 @@ test_result_t test_list_merge(void)
 {
 	test_result_t result = {"合并操作", true, ""};
 
-	list_t *list1 = list_create(10, sizeof(int));
-	list_t *list2 = list_create(10, sizeof(int));
+	list_handle_t list1 = list_create(10, sizeof(int));
+	list_handle_t list2 = list_create(10, sizeof(int));
 
 	if (list1 == NULL || list2 == NULL)
 	{
@@ -1367,7 +1367,7 @@ test_result_t test_list_merge(void)
 	}
 
 	// 测试2: 合并空列表
-	list_t *list3 = list_create(10, sizeof(int));
+	list_handle_t list3 = list_create(10, sizeof(int));
 	if (list3 == NULL)
 	{
 		result.passed = false;
@@ -1434,7 +1434,7 @@ test_result_t test_list_performance(void)
 	double cpu_time_used;
 
 	// 创建大容量列表进行性能测试
-	list_t *list = list_create(1000, sizeof(int));
+	list_handle_t list = list_create(1000, sizeof(int));
 	if (list == NULL)
 	{
 		result.passed = false;
@@ -1489,7 +1489,7 @@ test_result_t test_list_save_restore(void)
 	const char *test_file = "test_list_persist.bin";
 
 	// 创建测试链表并添加数据
-	list_t *original_list = list_create(20, sizeof(int));
+	list_handle_t original_list = list_create(20, sizeof(int));
 	if (original_list == NULL)
 	{
 		result.passed = false;
@@ -1636,7 +1636,7 @@ test_result_t test_list_save_restore(void)
 
 	// ========== 反序列化恢复链表 ==========
 	// 测试容量升级：使用更大的容量恢复（向后兼容）
-	list_t *restored_list = list_create(original_list->capacity + 10, original_list->element_size);
+	list_handle_t restored_list = list_create(original_list->capacity + 10, original_list->element_size);
 	if (restored_list == NULL)
 	{
 		result.passed = false;
@@ -1787,7 +1787,7 @@ test_result_t test_list_save_restore(void)
 			fclose(fp);
 
 			// 尝试用更小的容量恢复，应该失败
-			list_t *small_list = list_create(original_list->capacity - 5, original_list->element_size);
+			list_handle_t small_list = list_create(original_list->capacity - 5, original_list->element_size);
 			if (small_list != NULL)
 			{
 				if (list_deserialize(small_list, test_buffer, file_size))

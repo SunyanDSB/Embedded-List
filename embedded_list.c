@@ -8,16 +8,16 @@
 #define LIST_UNLOCK(list) LIST_MUTEX_UNLOCK((list)->mutex)
 #define LIST_NODE_SIZE(element_size) ALIGN_UP(sizeof(list_node_t) + ((element_size) > 0 ? (element_size) : 1), 4)
 
-static list_node_t *list_alloc_node(list_t *list);
-static void list_free_node(list_t *list, list_node_t *node);
-static void list_init_free_list(list_t *list);
+static list_node_t *list_alloc_node(list_handle_t list);
+static void list_free_node(list_handle_t list, list_node_t *node);
+static void list_init_free_list(list_handle_t list);
 
-list_t *list_create(uint16_t capacity, uint16_t element_size)
+list_handle_t list_create(uint16_t capacity, uint16_t element_size)
 {
 	if (capacity == 0 || element_size == 0)
 		return NULL;
 
-	list_t *list = (list_t *)malloc(sizeof(list_t));
+	list_handle_t list = (list_handle_t)malloc(sizeof(list_t));
 	if (list == NULL)
 		return NULL;
 
@@ -47,7 +47,7 @@ list_t *list_create(uint16_t capacity, uint16_t element_size)
 	return list;
 }
 
-list_t *list_create_from_buf(void *node_pool_buf, uint16_t capacity, uint16_t element_size)
+list_handle_t list_create_from_buf(void *node_pool_buf, uint16_t capacity, uint16_t element_size)
 {
 	if (node_pool_buf == NULL || capacity == 0 || element_size == 0)
 		return NULL;
@@ -56,7 +56,7 @@ list_t *list_create_from_buf(void *node_pool_buf, uint16_t capacity, uint16_t el
 	if (((unsigned long)node_pool_buf & 3) != 0)
 		return NULL;
 
-	list_t *list = (list_t *)malloc(sizeof(list_t));
+	list_handle_t list = (list_handle_t)malloc(sizeof(list_t));
 	if (list == NULL)
 		return NULL;
 
@@ -79,7 +79,7 @@ list_t *list_create_from_buf(void *node_pool_buf, uint16_t capacity, uint16_t el
 	return list;
 }
 
-static void list_init_free_list(list_t *list)
+static void list_init_free_list(list_handle_t list)
 {
 	if (list->node_pool == NULL)
 		return;
@@ -95,7 +95,7 @@ static void list_init_free_list(list_t *list)
 	}
 }
 
-void list_free(list_t *list)
+void list_free(list_handle_t list)
 {
 	if (list != NULL)
 	{
@@ -109,7 +109,7 @@ void list_free(list_t *list)
 	}
 }
 
-static list_node_t *list_alloc_node(list_t *list)
+static list_node_t *list_alloc_node(list_handle_t list)
 {
 	if (list->free_list == NULL)
 		return NULL;
@@ -126,7 +126,7 @@ static list_node_t *list_alloc_node(list_t *list)
 	return node;
 }
 
-static void list_free_node(list_t *list, list_node_t *node)
+static void list_free_node(list_handle_t list, list_node_t *node)
 {
 	if (node == NULL)
 		return;
@@ -136,7 +136,7 @@ static void list_free_node(list_t *list, list_node_t *node)
 }
 
 // ========================= 容量查询 =========================
-bool list_empty(list_t *list)
+bool list_empty(list_handle_t list)
 {
 	if (list == NULL)
 		return true;
@@ -147,23 +147,23 @@ bool list_empty(list_t *list)
 	return empty;
 }
 
-uint16_t list_size(list_t *list)
+uint16_t list_size(list_handle_t list)
 {
 	return list ? list->size : 0;
 }
 
-uint16_t list_max_size(list_t *list)
+uint16_t list_max_size(list_handle_t list)
 {
 	return list ? list->capacity : 0;
 }
 
-uint16_t list_capacity(list_t *list)
+uint16_t list_capacity(list_handle_t list)
 {
 	return list ? list->capacity : 0;
 }
 
 // ========================= 元素访问 =========================
-bool list_front(list_t *list, void *element)
+bool list_front(list_handle_t list, void *element)
 {
 	if (list == NULL || element == NULL || list->head == NULL)
 		return false;
@@ -174,7 +174,7 @@ bool list_front(list_t *list, void *element)
 	return true;
 }
 
-bool list_back(list_t *list, void *element)
+bool list_back(list_handle_t list, void *element)
 {
 	if (list == NULL || element == NULL || list->tail == NULL)
 		return false;
@@ -185,12 +185,12 @@ bool list_back(list_t *list, void *element)
 	return true;
 }
 
-list_iterator_t list_begin(list_t *list)
+list_iterator_t list_begin(list_handle_t list)
 {
 	return list ? list->head : NULL;
 }
 
-list_iterator_t list_end(list_t *list)
+list_iterator_t list_end(list_handle_t list)
 {
 	return list ? list->tail : NULL;
 }
@@ -213,7 +213,7 @@ list_iterator_t list_prev(list_iterator_t it)
  *@note     如果索引越界，则返回NULL
  *@return   元素指针
  */
-list_iterator_t list_at(list_t *list, int16_t index)
+list_iterator_t list_at(list_handle_t list, int16_t index)
 {
 	if (list == NULL || index >= list->size)
 		return NULL;
@@ -234,7 +234,7 @@ list_iterator_t list_at(list_t *list, int16_t index)
 	return current;
 }
 
-void *list_get(list_t *list, int16_t index)
+void *list_get(list_handle_t list, int16_t index)
 {
 	list_iterator_t it = list_at(list, index);
 	return it ? it->data : NULL;
@@ -246,7 +246,7 @@ void *list_get(list_t *list, int16_t index)
  *@param    it 节点迭代器
  *@return   节点索引，如果节点为NULL，则返回0
  */
-int16_t list_index(list_t *list, list_iterator_t it)
+int16_t list_index(list_handle_t list, list_iterator_t it)
 {
 	if (list == NULL || it == NULL)
 		return -1;
@@ -262,7 +262,7 @@ int16_t list_index(list_t *list, list_iterator_t it)
 }
 
 // ========================= 修改操作 =========================
-void list_clear(list_t *list)
+void list_clear(list_handle_t list)
 {
 	if (list == NULL)
 		return;
@@ -291,7 +291,7 @@ void list_clear(list_t *list)
  *@param    element 插入元素
  *@return   是否插入成功
  */
-bool list_insert(list_t *list, list_iterator_t position, const void *element)
+bool list_insert(list_handle_t list, list_iterator_t position, const void *element)
 {
 	if (list == NULL || element == NULL || list->size >= list->capacity)
 		return false;
@@ -347,7 +347,7 @@ bool list_insert(list_t *list, list_iterator_t position, const void *element)
 	return true;
 }
 
-bool list_erase(list_t *list, list_iterator_t position)
+bool list_erase(list_handle_t list, list_iterator_t position)
 {
 	if (list == NULL || position == NULL)
 		return false;
@@ -379,7 +379,7 @@ bool list_erase(list_t *list, list_iterator_t position)
 	return true;
 }
 
-bool list_replace(list_t *list, list_iterator_t position, const void *element)
+bool list_replace(list_handle_t list, list_iterator_t position, const void *element)
 {
 	if (list == NULL || position == NULL || element == NULL)
 		return false;
@@ -390,17 +390,17 @@ bool list_replace(list_t *list, list_iterator_t position, const void *element)
 	return true;
 }
 
-bool list_push_front(list_t *list, const void *element)
+bool list_push_front(list_handle_t list, const void *element)
 {
 	return list_insert(list, list->head, element);
 }
 
-bool list_push_back(list_t *list, const void *element)
+bool list_push_back(list_handle_t list, const void *element)
 {
 	return list_insert(list, NULL, element);
 }
 
-bool list_pop_front(list_t *list, void *element)
+bool list_pop_front(list_handle_t list, void *element)
 {
 	if (list == NULL || list->head == NULL)
 		return false;
@@ -413,7 +413,7 @@ bool list_pop_front(list_t *list, void *element)
 	return list_erase(list, list->head);
 }
 
-bool list_pop_back(list_t *list, void *element)
+bool list_pop_back(list_handle_t list, void *element)
 {
 	if (list == NULL || list->tail == NULL)
 		return false;
@@ -426,7 +426,7 @@ bool list_pop_back(list_t *list, void *element)
 	return list_erase(list, list->tail);
 }
 
-void list_swap(list_t *list1, list_t *list2)
+void list_swap(list_handle_t list1, list_handle_t list2)
 {
 	if (list1 == NULL || list2 == NULL)
 		return;
@@ -472,7 +472,7 @@ void list_swap(list_t *list1, list_t *list2)
  * @param    last 结束节点
  * @return   是否移动成功
  */
-bool list_splice(list_t *list1, list_iterator_t position, list_t *list2,
+bool list_splice(list_handle_t list1, list_iterator_t position, list_handle_t list2,
                  list_iterator_t first, list_iterator_t last)
 {
 	if (list1 == NULL || list2 == NULL || first == NULL)
@@ -592,7 +592,7 @@ bool list_splice(list_t *list1, list_iterator_t position, list_t *list2,
 	return true;
 }
 
-bool list_merge(list_t *list1, list_t *list2)
+bool list_merge(list_handle_t list1, list_handle_t list2)
 {
 	return list_splice(list1, NULL, list2, list2->head, list2->tail);
 }
@@ -603,7 +603,7 @@ bool list_merge(list_t *list1, list_t *list2)
  *@param    value 要删除的元素
  *@return   删除的元素数量
  */
-uint16_t list_remove(list_t *list, const void *value)
+uint16_t list_remove(list_handle_t list, const void *value)
 {
 	if (list == NULL || value == NULL)
 		return 0;
@@ -618,7 +618,7 @@ uint16_t list_remove(list_t *list, const void *value)
  *@param    predicate_data 谓词函数参数
  *@return   删除的元素数量
  */
-uint16_t list_remove_if(list_t *list, list_predicate_func_t predicate, const void *predicate_data)
+uint16_t list_remove_if(list_handle_t list, list_predicate_func_t predicate, const void *predicate_data)
 {
 	if (list == NULL)
 		return 0;
@@ -647,7 +647,7 @@ uint16_t list_remove_if(list_t *list, list_predicate_func_t predicate, const voi
 	return remove_count;
 }
 
-void list_reverse(list_t *list)
+void list_reverse(list_handle_t list)
 {
 	if (list == NULL)
 		return;
@@ -682,7 +682,7 @@ void list_reverse(list_t *list)
  *@note     这个函数的时间复杂度是O(n^2)，需要遍历所有元素，不适合用于大型列表，适合链表长度较小或内存受限的嵌入式系统
  *@note     如果需要优化时间复杂度，可以考虑使用哈希表实现。
  */
-uint16_t list_unique(list_t *list)
+uint16_t list_unique(list_handle_t list)
 {
 	if (list == NULL)
 		return 0;
@@ -719,7 +719,7 @@ uint16_t list_unique(list_t *list)
 
 // ========================= 工具函数 =========================
 
-list_iterator_t list_find(list_t *list, const void *value)
+list_iterator_t list_find(list_handle_t list, const void *value)
 {
 	if (list == NULL || value == NULL)
 		return NULL;
@@ -735,7 +735,7 @@ list_iterator_t list_find(list_t *list, const void *value)
  *@param    value 要查找的值或谓词函数参数
  *@return   找到的节点迭代器，如果未找到则返回NULL
  */
-list_iterator_t list_find_if(list_t *list, list_iterator_t start, list_predicate_func_t predicate, const void *value)
+list_iterator_t list_find_if(list_handle_t list, list_iterator_t start, list_predicate_func_t predicate, const void *value)
 {
 	if (list == NULL)
 		return NULL;
@@ -771,7 +771,7 @@ list_iterator_t list_find_if(list_t *list, list_iterator_t start, list_predicate
  *@param    user_data 传递给回调函数的用户数据
  *@return   处理的节点数量
  */
-void list_for_each_if(list_t *list, list_foreach_func_t callback, void *user_data)
+void list_for_each_if(list_handle_t list, list_foreach_func_t callback, void *user_data)
 {
 	if (list == NULL || callback == NULL)
 		return;
@@ -789,7 +789,7 @@ void list_for_each_if(list_t *list, list_foreach_func_t callback, void *user_dat
 	LIST_UNLOCK(list);
 }
 
-bool list_contains(list_t *list, const void *value)
+bool list_contains(list_handle_t list, const void *value)
 {
 	return list_find(list, value) != NULL;
 }

@@ -83,7 +83,7 @@ void traditional_list_insert() {
 
 ```c
 // 静态链表：预先分配节点池
-list_t *list = list_create(100, sizeof(int));  // 预分配100个节点
+list_handle_t list = list_create(100, sizeof(int));  // 预分配100个节点
 // 所有节点都在池中，插入/删除只是改变指针指向
 ```
 
@@ -120,7 +120,7 @@ head → [node5+data] → [node2+data] → [node8+data] → NULL
 #define ELEMENT_SIZE sizeof(int)
 // 注意：需要分配足够的缓冲区，考虑对齐后的节点大小
 static uint8_t node_pool[(sizeof(list_node_t) + ELEMENT_SIZE + 4) * MAX_ITEMS];
-list_t *list = list_create_from_buf(node_pool, MAX_ITEMS, sizeof(int));
+list_handle_t list = list_create_from_buf(node_pool, MAX_ITEMS, sizeof(int));
 // ✅ 内存使用完全可控，不会超出预期
 // ✅ 静态数组会自动4字节对齐，满足ARM架构要求
 ```
@@ -141,7 +141,7 @@ void ISR_Handler() {
 // 适合禁用malloc的严格嵌入式环境
 // 使用静态缓冲区
 static uint8_t buffer[1024];
-list_t *list = list_create_from_buf(buffer, 100, sizeof(int));
+list_handle_t list = list_create_from_buf(buffer, 100, sizeof(int));
 // ✅ 完全不依赖堆内存
 ```
 
@@ -182,11 +182,11 @@ Algorithm/List/
 
 ```c
 // 动态分配方式
-list_t *list = list_create(100, sizeof(int));  // 容量100，元素类型int
+list_handle_t list = list_create(100, sizeof(int));  // 容量100，元素类型int
 
 // 静态分配方式（适合无动态内存的系统）
 static uint8_t buffer[1024];
-list_t *list = list_create_from_buf(buffer, 100, sizeof(int));
+list_handle_t list = list_create_from_buf(buffer, 100, sizeof(int));
 ```
 
 ### 3. 基本操作
@@ -301,7 +301,7 @@ typedef struct {
 
 void sensor_collection_example() {
     // 创建链表，存储最近100个传感器读数
-    list_t *sensor_list = list_create(100, sizeof(sensor_data_t));
+    list_handle_t sensor_list = list_create(100, sizeof(sensor_data_t));
     
     // 采集数据
     sensor_data_t data = {
@@ -345,7 +345,7 @@ typedef struct {
 } event_t;
 
 void event_queue_example() {
-    list_t *event_queue = list_create(50, sizeof(event_t));
+    list_handle_t event_queue = list_create(50, sizeof(event_t));
     
     // 添加事件
     event_t evt = {EVENT_BUTTON_PRESS, 1};
@@ -381,7 +381,7 @@ bool is_greater_than(const void *list_data, const void *predicate_data) {
 }
 
 void conditional_operations_example() {
-    list_t *list = list_create(100, sizeof(int));
+    list_handle_t list = list_create(100, sizeof(int));
     
     // 添加一些数据
     int values[] = {10, 20, 30, 40, 50};
@@ -418,7 +418,7 @@ void static_allocation_example() {
     static uint8_t node_pool[(sizeof(list_node_t) + ELEMENT_SIZE + 4) * MAX_ITEMS];
     
     // 从缓冲区创建链表（静态数组会自动4字节对齐，满足ARM架构要求）
-    list_t *list = list_create_from_buf(node_pool, MAX_ITEMS, sizeof(int));
+    list_handle_t list = list_create_from_buf(node_pool, MAX_ITEMS, sizeof(int));
     if (list == NULL) {
         // 创建失败，可能是缓冲区未对齐（静态数组通常不会有此问题）
         return;
@@ -467,7 +467,7 @@ uint16_t count = list_remove_if(list, predicate, data);  // ✅ 不会死锁
 ### 动态分配模式
 
 ```c
-list_t *list = list_create(100, sizeof(int));
+list_handle_t list = list_create(100, sizeof(int));
 // 分配了：
 // - list_t结构体
 // - 100个节点的节点池（每个节点包含int数据）
@@ -479,7 +479,7 @@ list_free(list);  // 释放所有内存
 
 ```c
 static uint8_t buffer[1024];
-list_t *list = list_create_from_buf(buffer, 100, sizeof(int));
+list_handle_t list = list_create_from_buf(buffer, 100, sizeof(int));
 // 只分配了list_t结构体，节点池使用外部缓冲区
 // 不需要调用list_free（但可以调用list_clear清空数据）
 ```
@@ -519,15 +519,15 @@ list_t *list = list_create_from_buf(buffer, 100, sizeof(int));
 ```c
 // ✅ 正确：静态数组会自动对齐到4字节边界
 static uint8_t buffer[1024];
-list_t *list = list_create_from_buf(buffer, 100, sizeof(int));
+list_handle_t list = list_create_from_buf(buffer, 100, sizeof(int));
 
 // ✅ 正确：使用对齐属性（GCC/ARMCC）
 __attribute__((aligned(4))) uint8_t buffer[1024];
-list_t *list = list_create_from_buf(buffer, 100, sizeof(int));
+list_handle_t list = list_create_from_buf(buffer, 100, sizeof(int));
 
 // ❌ 错误：缓冲区未对齐会导致Hard Fault（在ARM架构上）
 uint8_t *buffer = malloc(1024) + 1;  // 偏移1字节，未对齐
-list_t *list = list_create_from_buf(buffer, 100, sizeof(int));  // 会返回NULL或触发Hard Fault
+list_handle_t list = list_create_from_buf(buffer, 100, sizeof(int));  // 会返回NULL或触发Hard Fault
 ```
 
 **检查对齐的方法：**
@@ -627,7 +627,7 @@ static uint8_t node_pool[(sizeof(list_node_t) + ELEMENT_SIZE + 4) * MAX_ITEMS];
 #include "list_save.h"
 
 void save_to_flash_example() {
-    list_t *list = list_create(100, sizeof(int));
+    list_handle_t list = list_create(100, sizeof(int));
     
     // 添加一些数据
     for (int i = 0; i < 10; i++) {
@@ -661,7 +661,7 @@ void save_to_flash_example() {
 
 void restore_from_flash_example() {
     // 创建链表（容量和元素大小必须与保存时一致）
-    list_t *list = list_create(100, sizeof(int));
+    list_handle_t list = list_create(100, sizeof(int));
     
     // 从Flash读取
     uint8_t buffer[1024];
@@ -698,7 +698,7 @@ void sensor_log_with_persistence() {
     static uint8_t node_pool[sizeof(list_node_t) * MAX_READINGS + 
                               MAX_READINGS * sizeof(sensor_data_t)];
     
-    list_t *readings = list_create_from_buf(node_pool, MAX_READINGS, 
+    list_handle_t readings = list_create_from_buf(node_pool, MAX_READINGS, 
                                              sizeof(sensor_data_t));
     
     // 定期保存到EEPROM
@@ -792,7 +792,7 @@ void sensor_log_with_persistence() {
 
 **影响：**
 ```c
-list_t *list = list_create(10, sizeof(int));  // 容量固定为10
+list_handle_t list = list_create(10, sizeof(int));  // 容量固定为10
 // 如果尝试插入第11个元素，会失败
 if (!list_push_back(list, &value)) {
     // 容量已满，插入失败
@@ -814,7 +814,7 @@ if (!list_push_back(list, &value)) {
 **影响：**
 ```c
 // 即使只存储1个元素，也会分配100个节点的内存
-list_t *list = list_create(100, sizeof(int));
+list_handle_t list = list_create(100, sizeof(int));
 list_push_back(list, &value);  // 只用了1个节点，但占用了100个节点的内存
 ```
 
@@ -914,7 +914,7 @@ bool success = list_deserialize(list, buffer, size);
 **影响：**
 ```c
 // 无法在同一链表中存储不同大小的结构
-list_t *list = list_create(100, sizeof(int));  // 只能存储int
+list_handle_t list = list_create(100, sizeof(int));  // 只能存储int
 // 无法存储不同大小的结构体
 ```
 

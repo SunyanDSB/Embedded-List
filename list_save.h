@@ -51,7 +51,7 @@ typedef struct
  * @param buffer_size 缓冲区大小
  * @return 实际使用的字节数，失败返回0
  */
-uint32_t list_serialize(list_t *list, void *buffer, uint32_t buffer_size);
+uint32_t list_serialize(list_handle_t  list, void *buffer, uint32_t buffer_size);
 
 /**
  * @brief 反序列化：从缓冲区恢复链表
@@ -62,13 +62,13 @@ uint32_t list_serialize(list_t *list, void *buffer, uint32_t buffer_size);
  * @note 新链表的capacity必须 >= 旧链表的capacity，element_size必须一致
  * @note 允许新链表容量大于旧链表，这样可以实现"升级"到更大容量的链表
  */
-bool list_deserialize(list_t *list, const void *buffer, uint32_t buffer_size);
+bool list_deserialize(list_handle_t  list, const void *buffer, uint32_t buffer_size);
 
 /**
  * @brief 计算序列化所需缓冲区大小
  * @param list 链表指针
  * @return 序列化所需缓冲区大小
  */
-uint32_t list_get_serialize_size(list_t *list);
+uint32_t list_get_serialize_size(list_handle_t  list);
 
 #endif
