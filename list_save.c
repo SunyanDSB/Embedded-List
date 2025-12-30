@@ -4,8 +4,10 @@
 
 #define LIST_LOCK(list) LIST_MUTEX_LOCK((list)->mutex)
 #define LIST_UNLOCK(list) LIST_MUTEX_UNLOCK((list)->mutex)
-
-#define LIST_NODE_SIZE(element_size) (sizeof(list_node_t) + ((element_size) > 0 ? (element_size) : 1))
+// 对齐宏：向上对齐到指定边界（ARM需要4字节对齐）
+#define ALIGN_UP(size, align) (((size) + (align) - 1) & ~((size_t)(align) - 1))
+// 节点大小：结构体大小 + 数据大小，然后对齐到4字节（ARM指针对齐要求）
+#define LIST_NODE_SIZE(element_size) ALIGN_UP(sizeof(list_node_t) + ((element_size) > 0 ? (element_size) : 1), 4)
 
 static uint16_t list_node_to_index(list_t *list, list_node_t *node)
 {

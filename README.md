@@ -117,9 +117,12 @@ head → [node5+data] → [node2+data] → [node8+data] → NULL
 ```c
 // 在RAM只有几KB的MCU上使用
 #define MAX_ITEMS 50
-uint8_t node_pool[sizeof(list_node_t) * MAX_ITEMS + MAX_ITEMS * sizeof(int)];
+#define ELEMENT_SIZE sizeof(int)
+// 注意：需要分配足够的缓冲区，考虑对齐后的节点大小
+static uint8_t node_pool[(sizeof(list_node_t) + ELEMENT_SIZE + 4) * MAX_ITEMS];
 list_t *list = list_create_from_buf(node_pool, MAX_ITEMS, sizeof(int));
 // ✅ 内存使用完全可控，不会超出预期
+// ✅ 静态数组会自动4字节对齐，满足ARM架构要求
 ```
 
 ### 2. **实时性保证**
@@ -409,11 +412,17 @@ void conditional_operations_example() {
 
 void static_allocation_example() {
     // 在栈上分配节点池
+    // 注意：需要分配足够的缓冲区，考虑对齐后的节点大小（每个节点会自动对齐到4字节）
     #define MAX_ITEMS 50
-    uint8_t node_pool[sizeof(list_node_t) * MAX_ITEMS + MAX_ITEMS * sizeof(int)];
+    #define ELEMENT_SIZE sizeof(int)
+    static uint8_t node_pool[(sizeof(list_node_t) + ELEMENT_SIZE + 4) * MAX_ITEMS];
     
-    // 从缓冲区创建链表
+    // 从缓冲区创建链表（静态数组会自动4字节对齐，满足ARM架构要求）
     list_t *list = list_create_from_buf(node_pool, MAX_ITEMS, sizeof(int));
+    if (list == NULL) {
+        // 创建失败，可能是缓冲区未对齐（静态数组通常不会有此问题）
+        return;
+    }
     
     // 正常使用
     int value = 42;
@@ -488,6 +497,94 @@ list_t *list = list_create_from_buf(buffer, 100, sizeof(int));
   ↑            ↑            ↑                 ↑
 连续内存块，无碎片
 ```
+
+### ⚠️ 内存对齐要求（重要）
+
+**在ARM架构（如STM32F103、Cortex-M系列）上，必须注意内存对齐问题：**
+
+#### 1. 节点大小自动对齐
+
+本库已经自动处理了节点大小的对齐问题。每个节点的大小会自动向上对齐到4字节边界，确保在ARM架构上正确访问指针成员，避免Hard Fault错误。
+
+**对齐规则：**
+- 库内部会自动将节点大小对齐到4字节边界
+- 节点大小 = 向上对齐到4字节的 `(sizeof(list_node_t) + element_size)`
+- 例如：`element_size = 1` 时，节点大小 = `对齐(8 + 1, 4) = 12` 字节
+- `sizeof(list_node_t)` 通常是 8 字节（包含两个指针：next 和 prev）
+
+#### 2. 缓冲区地址对齐要求
+
+使用 `list_create_from_buf()` 时，**传入的缓冲区地址必须是4字节对齐的**：
+
+```c
+// ✅ 正确：静态数组会自动对齐到4字节边界
+static uint8_t buffer[1024];
+list_t *list = list_create_from_buf(buffer, 100, sizeof(int));
+
+// ✅ 正确：使用对齐属性（GCC/ARMCC）
+__attribute__((aligned(4))) uint8_t buffer[1024];
+list_t *list = list_create_from_buf(buffer, 100, sizeof(int));
+
+// ❌ 错误：缓冲区未对齐会导致Hard Fault（在ARM架构上）
+uint8_t *buffer = malloc(1024) + 1;  // 偏移1字节，未对齐
+list_t *list = list_create_from_buf(buffer, 100, sizeof(int));  // 会返回NULL或触发Hard Fault
+```
+
+**检查对齐的方法：**
+```c
+// 确保缓冲区4字节对齐
+if (((unsigned long)buffer & 3) != 0) {
+    // 缓冲区未对齐，需要调整
+}
+```
+
+#### 3. 为什么需要对齐？
+
+- **ARM架构要求**：32位ARM处理器要求指针访问必须4字节对齐
+- **性能优化**：对齐的内存访问更快
+- **避免Hard Fault**：未对齐的指针访问会导致硬件异常（Hard Fault）
+
+#### 4. 动态分配模式
+
+使用 `list_create()` 时，`malloc()` 返回的地址通常会自动对齐到8字节或更大边界，所以不需要担心对齐问题。
+
+#### 5. 实际大小计算
+
+由于对齐的存在，实际节点池大小可能比理论值稍大：
+
+```c
+// 理论大小（不考虑对齐）
+size_t theoretical_size = sizeof(list_node_t) * capacity + capacity * element_size;
+// sizeof(list_node_t) = 8 字节（两个指针：next 和 prev）
+
+// 实际大小（库内部会自动对齐到4字节边界）
+// 每个节点大小 = 向上对齐到4字节的 (8 + element_size)
+// 例如：capacity=100, element_size=1 时
+// 理论：8*100 + 1*100 = 900 字节
+// 实际：12*100 = 1200 字节（每个节点对齐到12字节，即 ALIGN_UP(9, 4) = 12）
+
+// 对于小元素（element_size < 4），每个节点通常需要 12 字节
+// 对于大元素（element_size >= 4 且是4的倍数），每个节点 = 8 + element_size
+// 对于大元素（element_size >= 4 但不是4的倍数），每个节点 = 8 + element_size + 对齐填充
+```
+
+**建议：** 在使用静态分配时，建议分配足够大的缓冲区。由于库内部会自动对齐节点大小，可以按以下方式计算：
+
+```c
+#define MAX_ITEMS 100
+#define ELEMENT_SIZE sizeof(int)
+// 保守估计：sizeof(list_node_t)通常是8字节（两个指针），加上数据大小，然后向上对齐到4字节
+// 对于小数据（<4字节），每个节点大约12-16字节
+// 对于大数据，每个节点 = sizeof(list_node_t) + ELEMENT_SIZE + 对齐填充
+#define ESTIMATED_NODE_SIZE (sizeof(list_node_t) + ELEMENT_SIZE + 4)  // 保守估计，多加4字节对齐余量
+static uint8_t node_pool[ESTIMATED_NODE_SIZE * MAX_ITEMS];
+
+// 或者使用更简单的方法：分配稍大的缓冲区（推荐）
+// 对于小元素（如int），每个节点大约12字节；对于大元素，节点大小接近 element_size + 8
+static uint8_t node_pool[(sizeof(list_node_t) + ELEMENT_SIZE + 4) * MAX_ITEMS];
+```
+
+**注意：** 如果缓冲区分配不够大，`list_create_from_buf()` 仍会成功创建链表，但后续操作可能会覆盖缓冲区边界，导致未定义行为。建议分配足够的缓冲区大小。
 
 ## 💾 数据持久化
 
@@ -850,5 +947,5 @@ list_t *list = list_create(100, sizeof(int));  // 只能存储int
 
 欢迎提交 Issue 和 Pull Request！
 
-详细的贡献指南请参阅 [CONTRIBUTING.md](CONTRIBUTING.md)。
+详细的贡献指南请参阅 [CONTRIBUTING.md](CONTRIBUTING.md)。更多使用示例参考 [EXAMPLES.md](EXAMPLES.md)
 

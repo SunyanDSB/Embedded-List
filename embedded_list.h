@@ -35,7 +35,7 @@
 
 // 平台相关的递归互斥锁定义
 #ifdef LIST_THREAD_SAFE
-// FreeRTOS 
+// FreeRTOS
 #if defined(FREERTOS)
 #include "FreeRTOS.h"
 #include "semphr.h"
@@ -45,7 +45,7 @@ typedef SemaphoreHandle_t list_mutex_t;
 #define LIST_MUTEX_UNLOCK(mutex) xSemaphoreGiveRecursive(mutex)
 #define LIST_MUTEX_DESTROY(mutex) vSemaphoreDelete(mutex)
 
-// CMSIS-RTOS 
+// CMSIS-RTOS
 #elif defined(CMSIS_OS_H)
 #include "cmsis_os.h"
 typedef osMutexId list_mutex_t;
@@ -105,58 +105,58 @@ typedef struct
 	list_mutex_t mutex;      // 线程安全互斥锁
 } list_t;
 
-// 迭代器类型
-typedef list_node_t *list_iterator_t;
+typedef list_t *list_handle_t;         // 链表句柄
+typedef list_node_t *list_iterator_t;  // 迭代器
 
 // 比较函数类型
-typedef bool (*list_predicate_func_t)(const void *list_data, const void *predicate_data);  // 谓词函数类型
-typedef void (*list_foreach_func_t)(list_iterator_t it, void *user_data);                  // 遍历回调函数类型
+typedef bool (*list_predicate_func_t)(const void *list_data, const void *predicate_data);
+typedef void (*list_foreach_func_t)(list_iterator_t it, void *user_data);
 
 // ========================= 创建和销毁 =========================
-list_t *list_create(uint16_t capacity, uint16_t element_size);
-list_t *list_create_from_buf(void *data_buf, uint16_t capacity, uint16_t element_size);
-void list_free(list_t *list);
+list_handle_t list_create(uint16_t capacity, uint16_t element_size);
+list_handle_t list_create_from_buf(void *data_buf, uint16_t capacity, uint16_t element_size);
+void list_free(list_handle_t list);
 
 // ========================= 容量查询 =========================
-bool list_empty(list_t *list);
-uint16_t list_size(list_t *list);
-uint16_t list_max_size(list_t *list);
-uint16_t list_capacity(list_t *list);
+bool list_empty(list_handle_t list);
+uint16_t list_size(list_handle_t list);
+uint16_t list_max_size(list_handle_t list);
+uint16_t list_capacity(list_handle_t list);
 // ========================= 元素访问 =========================
 
-bool list_front(list_t *list, void *element);
-bool list_back(list_t *list, void *element);
-list_iterator_t list_begin(list_t *list);
-list_iterator_t list_end(list_t *list);
+bool list_front(list_handle_t list, void *element);
+bool list_back(list_handle_t list, void *element);
+list_iterator_t list_begin(list_handle_t list);
+list_iterator_t list_end(list_handle_t list);
 list_iterator_t list_next(list_iterator_t it);
 list_iterator_t list_prev(list_iterator_t it);
-list_iterator_t list_at(list_t *list, int16_t index);
-void *list_get(list_t *list, int16_t index);
-int16_t list_index(list_t *list, list_iterator_t it);
+list_iterator_t list_at(list_handle_t list, int16_t index);
+void *list_get(list_handle_t list, int16_t index);
+int16_t list_index(list_handle_t list, list_iterator_t it);
 
 // ========================= 修改操作 =========================
-void list_clear(list_t *list);
-bool list_insert(list_t *list, list_iterator_t position, const void *element);
-bool list_erase(list_t *list, list_iterator_t position);
-bool list_replace(list_t *list, list_iterator_t position, const void *element);
-bool list_push_front(list_t *list, const void *element);
-bool list_push_back(list_t *list, const void *element);
-bool list_pop_front(list_t *list, void *element);
-bool list_pop_back(list_t *list, void *element);
-void list_swap(list_t *list1, list_t *list2);
+void list_clear(list_handle_t list);
+bool list_insert(list_handle_t list, list_iterator_t position, const void *element);
+bool list_erase(list_handle_t list, list_iterator_t position);
+bool list_replace(list_handle_t list, list_iterator_t position, const void *element);
+bool list_push_front(list_handle_t list, const void *element);
+bool list_push_back(list_handle_t list, const void *element);
+bool list_pop_front(list_handle_t list, void *element);
+bool list_pop_back(list_handle_t list, void *element);
+void list_swap(list_handle_t list1, list_handle_t list2);
 
 // ========================= 列表专有操作 =========================
-bool list_splice(list_t *list1, list_iterator_t position, list_t *list2, list_iterator_t first, list_iterator_t last);
-bool list_merge(list_t *list1, list_t *list2);
-uint16_t list_remove(list_t *list, const void *value);
-uint16_t list_remove_if(list_t *list, list_predicate_func_t predicate, const void *predicate_data);
-void list_reverse(list_t *list);
-uint16_t list_unique(list_t *list);
+bool list_splice(list_handle_t list1, list_iterator_t position, list_handle_t list2, list_iterator_t first, list_iterator_t last);
+bool list_merge(list_handle_t list1, list_handle_t list2);
+uint16_t list_remove(list_handle_t list, const void *value);
+uint16_t list_remove_if(list_handle_t list, list_predicate_func_t predicate, const void *predicate_data);
+void list_reverse(list_handle_t list);
+uint16_t list_unique(list_handle_t list);
 
 // ========================= 工具函数 =========================
-list_iterator_t list_find(list_t *list, const void *value);
-list_iterator_t list_find_if(list_t *list, list_iterator_t start, list_predicate_func_t predicate, const void *value);
-void list_for_each_if(list_t *list, list_foreach_func_t callback, void *user_data);
-bool list_contains(list_t *list, const void *value);
+list_iterator_t list_find(list_handle_t list, const void *value);
+list_iterator_t list_find_if(list_handle_t list, list_iterator_t start, list_predicate_func_t predicate, const void *value);
+void list_for_each_if(list_handle_t list, list_foreach_func_t callback, void *user_data);
+bool list_contains(list_handle_t list, const void *value);
 
 #endif

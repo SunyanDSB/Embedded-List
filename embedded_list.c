@@ -3,9 +3,10 @@
 #include <stdint.h>
 #include <string.h>
 
+#define ALIGN_UP(size, align) (((size) + (align) - 1) & ~((size_t)(align) - 1))
 #define LIST_LOCK(list) LIST_MUTEX_LOCK((list)->mutex)
 #define LIST_UNLOCK(list) LIST_MUTEX_UNLOCK((list)->mutex)
-#define LIST_NODE_SIZE(element_size) (sizeof(list_node_t) + ((element_size) > 0 ? (element_size) : 1))
+#define LIST_NODE_SIZE(element_size) ALIGN_UP(sizeof(list_node_t) + ((element_size) > 0 ? (element_size) : 1), 4)
 
 static list_node_t *list_alloc_node(list_t *list);
 static void list_free_node(list_t *list, list_node_t *node);
@@ -49,6 +50,10 @@ list_t *list_create(uint16_t capacity, uint16_t element_size)
 list_t *list_create_from_buf(void *node_pool_buf, uint16_t capacity, uint16_t element_size)
 {
 	if (node_pool_buf == NULL || capacity == 0 || element_size == 0)
+		return NULL;
+
+	// 检查缓冲区地址是否4字节对齐
+	if (((unsigned long)node_pool_buf & 3) != 0)
 		return NULL;
 
 	list_t *list = (list_t *)malloc(sizeof(list_t));
